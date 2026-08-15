@@ -1,25 +1,5 @@
 #!/bin/sh
 
-percentage() {
-	value="$1"
-	total="$2"
-	
-	awk -v value="$value" -v total="$total" \
-		'BEGIN {
-			if (total == 0) {
-				print "Error: total cannot be zero"
-				exit 1
-			}
-			print value / total * 100
-		}'
-}
-
-normalize_decimal() {
-	value="$1"
-	#printf "%.1f" "$(echo "$value" | sed 's/^\([0-9]*\.[0-9]\)/0&/')"
-	printf "%.0f" "$value"
-}
-
 ram_usage() {
 	pct_used=$(awk '
 		/^MemTotal:/     { total = $2 }
@@ -39,20 +19,16 @@ ram_usage() {
 }
 
 swap_usage() {
-	data=$(free | grep "Swap:")
-
-	swap_used=$(echo "$data" | awk '{print $3}')
-	swap_total=$(echo "$data" | awk '{print $2}')
-
-	if [ "$swap_total_human" != "0B" ] && [ "$swap_total_human" != "0" ]; then
-		pct_used=$(percentage "$swap_used" "$swap_total")
-		pct_used=$(normalize_decimal "$pct_used")
-
-		printf "%s%%\n" "$pct_used" 
-		return
-	fi
-
-	printf "0%%\n"
+	awk '
+		/^SwapTotal:/ { total = $2 }
+		/^SwapFree:/  { free = $2 }
+		END {
+			if (total > 0)
+				printf "%.0f%%\n", (total - free) / total * 100
+			else
+				print "0%"
+		}
+	' /proc/meminfo
 }
 
 disk_usage() {
@@ -65,7 +41,12 @@ disk_usage() {
 }
 
 processes() {
-	ps -A --no-headers | wc -l
+	count=0
+	for process in /proc/[0-9]*; do
+		[ -d "$process" ] || continue
+		count=$((count + 1))
+	done
+	printf "%s\n" "$count"
 }
 
 system_load() {
@@ -74,7 +55,7 @@ system_load() {
 
 network() {
 	# Użycie flagi -e w grep jest zgodne z POSIX (zamiast niestandardowego \|)
-	interfaces=$(ip -oneline address | grep -v -e "host" -e "fe80" | grep -E "inet6?")
+	interfaces=$(ip -oneline address 2>/dev/null | grep -v -e "host" -e "fe80" | grep -E "inet6?")
 
 	# Przekazujemy zmienną do pętli while bezpiecznym potokiem
 	if [ -n "$interfaces" ]; then
@@ -94,7 +75,7 @@ network() {
 }
 
 logged_in_users() {
-	users=$(ss --no-header state established '( sport = :ssh )' | awk '{print $5}')
+	users=$(ss --no-header state established '( sport = :ssh )' 2>/dev/null | awk '{print $5}')
 	count=$(echo "$users" | grep -vc "^$")
 	printf "%s\n" "$count"
 }
@@ -132,10 +113,24 @@ main() {
   Memory usage:     |$(ram_usage)
   Swap usage:       |$(swap_usage)
   Processes:        |$(processes)
-  Users logged in:  |$(logged_in_users)
-$(network)"
+  Users logged in:  |$(logged_in_users)"
 
-	printf "%s\n" "$template_data" | column -t -s "|"
+	network_data=$(network)
+	if [ -n "$network_data" ]; then
+		template_data="$template_data
+$network_data"
+	fi
+
+	printf "%s\n" "$template_data" | awk -F '|' '
+		{
+			label[NR] = $1
+			value[NR] = $2
+			if (length($1) > width) width = length($1)
+		}
+		END {
+			for (line = 1; line <= NR; line++)
+				printf "%-*s  %s\n", width, label[line], value[line]
+		}'
 
 	printf "\nThe uptime of this server is %s.\n\n" "$(uptime_info)"
 }

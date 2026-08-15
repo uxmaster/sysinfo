@@ -1,0 +1,15 @@
+Source: sysinfo
+Section: admin
+Priority: optional
+Maintainer: Enabla Package Maintainers <packages@enabla.pl>
+Build-Depends: debhelper-compat (= 13)
+Standards-Version: 4.7.2
+Rules-Requires-Root: no
+
+Package: sysinfo
+Architecture: all
+Depends: ${misc:Depends}, iproute2
+Description: concise local Linux system information summary
+ sysinfo displays load, disk, memory and swap use, process and SSH connection
+ counts, network addresses, and uptime. It is a small independent POSIX shell
+ implementation suitable for interactive use or login messages.

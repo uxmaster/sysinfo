@@ -1,0 +1,27 @@
+.TH SYSINFO 1 "August 2026" "sysinfo 1.0.0" "User Commands"
+.SH NAME
+sysinfo \- print a concise Linux system information summary
+.SH SYNOPSIS
+.B sysinfo
+.SH DESCRIPTION
+.B sysinfo
+prints the current system load, root filesystem usage, memory and swap use,
+process count, established SSH connection count, non-link-local network
+addresses, and system uptime.
+.PP
+It is an independent POSIX shell utility with an output style inspired by
+landscape-sysinfo. It neither requires nor communicates with Landscape.
+.SH FILES
+.TP
+.I /proc/loadavg
+Current load average.
+.TP
+.I /proc/meminfo
+Memory statistics.
+.TP
+.I /proc/uptime
+System uptime.
+.SH EXIT STATUS
+Returns 0 after printing the summary.
+.SH AUTHOR
+Jacek Stypuła.
