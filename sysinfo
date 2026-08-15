@@ -1,0 +1,143 @@
+#!/bin/sh
+
+percentage() {
+	value="$1"
+	total="$2"
+	
+	awk -v value="$value" -v total="$total" \
+		'BEGIN {
+			if (total == 0) {
+				print "Error: total cannot be zero"
+				exit 1
+			}
+			print value / total * 100
+		}'
+}
+
+normalize_decimal() {
+	value="$1"
+	#printf "%.1f" "$(echo "$value" | sed 's/^\([0-9]*\.[0-9]\)/0&/')"
+	printf "%.0f" "$value"
+}
+
+ram_usage() {
+	pct_used=$(awk '
+		/^MemTotal:/     { total = $2 }
+		/^MemFree:/      { free = $2 }
+		/^Buffers:/      { buffers = $2 }
+		/^Cached:/       { cached = $2 }
+		/^SReclaimable:/ { sreclaimable = $2 }
+
+		END {
+			used = total - free - buffers - cached - sreclaimable
+			if (used < 0) used = 0
+			printf "%.0f", used / total * 100
+		}
+	' /proc/meminfo)
+
+	printf "%s%%\n" "$pct_used"
+}
+
+swap_usage() {
+	data=$(free | grep "Swap:")
+
+	swap_used=$(echo "$data" | awk '{print $3}')
+	swap_total=$(echo "$data" | awk '{print $2}')
+
+	if [ "$swap_total_human" != "0B" ] && [ "$swap_total_human" != "0" ]; then
+		pct_used=$(percentage "$swap_used" "$swap_total")
+		pct_used=$(normalize_decimal "$pct_used")
+
+		printf "%s%%\n" "$pct_used" 
+		return
+	fi
+
+	printf "0%%\n"
+}
+
+disk_usage() {
+	data=$(df --human-readable / | tail -n +2)
+
+	disk_total=$(echo "$data" | awk '{print $2}')
+	disk_pct=$(echo "$data" | awk '{print $5}')
+
+	printf "%s of %s\n" "$disk_pct" "$disk_total"
+}
+
+processes() {
+	ps -A --no-headers | wc -l
+}
+
+system_load() {
+	awk '{print $1}' /proc/loadavg
+}
+
+network() {
+	# Użycie flagi -e w grep jest zgodne z POSIX (zamiast niestandardowego \|)
+	interfaces=$(ip -oneline address | grep -v -e "host" -e "fe80" | grep -E "inet6?")
+
+	# Przekazujemy zmienną do pętli while bezpiecznym potokiem
+	if [ -n "$interfaces" ]; then
+		printf "%s\n" "$interfaces" | while read -r interface; do
+			[ -z "$interface" ] && continue
+			
+			name=$(echo "$interface" | awk '{print $2}')
+			
+			# Zamiana grep -P (PCRE) na wbudowane mechanizmy awk - bardzo szybkie i zgodne z POSIX
+			ip4=$(echo "$interface" | awk '{for(i=1;i<=NF;i++) if($i=="inet") print $(i+1)}')
+			ip6=$(echo "$interface" | awk '{for(i=1;i<=NF;i++) if($i=="inet6") print $(i+1)}')
+			
+			[ -n "$ip4" ] && printf "  IPv4 address for %s:|%s\n" "$name" "${ip4%%/*}"
+			[ -n "$ip6" ] && printf "  IPv6 address for %s:|%s\n" "$name" "${ip6%%/*}"
+		done
+	fi
+}
+
+logged_in_users() {
+	users=$(ss --no-header state established '( sport = :ssh )' | awk '{print $5}')
+	count=$(echo "$users" | grep -vc "^$")
+	printf "%s\n" "$count"
+}
+
+uptime_info() {
+	uptime_val=""
+	mins=""
+	hours=""
+	days=""
+
+	if [ -f "/proc/uptime" ]; then
+		uptime_val=$(cat "/proc/uptime")
+		uptime_val=${uptime_val%%.*}
+	fi
+
+	if [ -n "$uptime_val" ]; then
+		mins=$((uptime_val / 60 % 60))
+		hours=$((uptime_val / 3600 % 24))
+		days=$((uptime_val / 86400))
+
+		uptime_str="${mins}m"
+
+		[ "$hours" -ne 0 ] && uptime_str="${hours}h $uptime_str"
+		[ "$days" -ne 0 ] && uptime_str="${days}d $uptime_str"
+	fi
+
+	printf "%s\n" "$uptime_str"
+}
+
+main() {
+	printf "\n System information as of %s\n\n" "$(/bin/date)"
+
+	template_data="  System load:      |$(system_load)
+  Usage of /:       |$(disk_usage)
+  Memory usage:     |$(ram_usage)
+  Swap usage:       |$(swap_usage)
+  Processes:        |$(processes)
+  Users logged in:  |$(logged_in_users)
+$(network)"
+
+	printf "%s\n" "$template_data" | column -t -s "|"
+
+	printf "\nThe uptime of this server is %s.\n\n" "$(uptime_info)"
+}
+
+main
