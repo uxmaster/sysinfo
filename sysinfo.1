@@ -1,8 +1,9 @@
-.TH SYSINFO 1 "August 2026" "sysinfo 1.0.0" "User Commands"
+.TH SYSINFO 1 "August 2026" "sysinfo 1.0.1" "User Commands"
 .SH NAME
 sysinfo \- print a concise Linux system information summary
 .SH SYNOPSIS
 .B sysinfo
+.RB [ \-p | \-\-public-ip ]
 .SH DESCRIPTION
 .B sysinfo
 prints the current system load, root filesystem usage, memory and swap use,
@@ -11,6 +12,12 @@ addresses, and system uptime.
 .PP
 It is an independent POSIX shell utility with an output style inspired by
 landscape-sysinfo. It neither requires nor communicates with Landscape.
+.SH OPTIONS
+.TP
+.BR \-p ", " \-\-public-ip
+Also query the local cloud metadata service at 169.254.169.254 for a public
+IPv4 address. This is useful when the provider maps a public address to a
+private interface address using NAT. No metadata request is made by default.
 .SH FILES
 .TP
 .I /proc/loadavg

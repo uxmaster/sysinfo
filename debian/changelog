@@ -1,3 +1,10 @@
+sysinfo (1.0.1) unstable; urgency=medium
+
+  * Optionally report the public IPv4 address exposed by the local cloud
+    metadata service when --public-ip is requested.
+
+ -- Enabla Package Maintainers <packages@enabla.pl>  Sun, 16 Aug 2026 13:15:00 +0200
+
 sysinfo (1.0.0) unstable; urgency=medium
 
   * Initial Enabla package.

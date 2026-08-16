@@ -1,5 +1,12 @@
 #!/bin/sh
 
+PUBLIC_IP=0
+
+usage() {
+	printf 'usage: sysinfo [-p|--public-ip]\n' >&2
+	exit 2
+}
+
 ram_usage() {
 	pct_used=$(awk '
 		/^MemTotal:/     { total = $2 }
@@ -61,17 +68,46 @@ network() {
 	if [ -n "$interfaces" ]; then
 		printf "%s\n" "$interfaces" | while read -r interface; do
 			[ -z "$interface" ] && continue
-			
+
 			name=$(echo "$interface" | awk '{print $2}')
-			
+
 			# Zamiana grep -P (PCRE) na wbudowane mechanizmy awk - bardzo szybkie i zgodne z POSIX
 			ip4=$(echo "$interface" | awk '{for(i=1;i<=NF;i++) if($i=="inet") print $(i+1)}')
 			ip6=$(echo "$interface" | awk '{for(i=1;i<=NF;i++) if($i=="inet6") print $(i+1)}')
-			
+
 			[ -n "$ip4" ] && printf "  IPv4 address for %s:|%s\n" "$name" "${ip4%%/*}"
 			[ -n "$ip6" ] && printf "  IPv6 address for %s:|%s\n" "$name" "${ip6%%/*}"
 		done
 	fi
+}
+
+public_ipv4() {
+	metadata_address=169.254.169.254
+	metadata_url="http://$metadata_address/latest/meta-data/public-ipv4"
+
+	# Avoid delaying login on machines without an explicit metadata route.
+	ip -4 route show 2>/dev/null | awk -v address="$metadata_address" '
+		$1 == address || $1 == address "/32" { found = 1 }
+		END { exit !found }
+	' || return
+
+	address=$(curl --disable --silent --show-error --fail \
+		--noproxy '*' --proto '=http' --connect-timeout 1 --max-time 2 \
+		"$metadata_url" 2>/dev/null) || return
+
+	printf '%s\n' "$address" | awk -F. '
+		NF != 4 { exit 1 }
+		{
+			lines++
+			for (part = 1; part <= 4; part++) {
+				if ($part !~ /^[0-9]+$/ || $part > 255)
+					exit 1
+			}
+		}
+		END { if (lines != 1) exit 1 }
+	' || return
+
+	printf '%s\n' "$address"
 }
 
 logged_in_users() {
@@ -121,6 +157,14 @@ main() {
 $network_data"
 	fi
 
+	if [ "$PUBLIC_IP" -eq 1 ]; then
+		public_address=$(public_ipv4)
+		if [ -n "$public_address" ]; then
+			template_data="$template_data
+  Public IPv4 address:|$public_address"
+		fi
+	fi
+
 	printf "%s\n" "$template_data" | awk -F '|' '
 		{
 			label[NR] = $1
@@ -135,4 +179,16 @@ $network_data"
 	printf "\nThe uptime of this server is %s.\n\n" "$(uptime_info)"
 }
 
-main
+if [ "${SYSINFO_TEST_SOURCE_ONLY:-0}" != 1 ]; then
+	case "$#:${1:-}" in
+		0:) ;;
+		1:-p|1:--public-ip) PUBLIC_IP=1 ;;
+		1:-h|1:--help)
+			printf 'usage: sysinfo [-p|--public-ip]\n'
+			exit 0
+			;;
+		*) usage ;;
+	esac
+
+	main
+fi

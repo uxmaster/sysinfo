@@ -8,7 +8,7 @@ Rules-Requires-Root: no
 
 Package: sysinfo
 Architecture: all
-Depends: ${misc:Depends}, iproute2
+Depends: ${misc:Depends}, curl, iproute2
 Description: concise local Linux system information summary
  sysinfo displays load, disk, memory and swap use, process and SSH connection
  counts, network addresses, and uptime. It is a small independent POSIX shell
