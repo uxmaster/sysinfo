@@ -14,9 +14,16 @@ The presentation is inspired by the familiar `landscape-sysinfo` output, but
 this is an independent POSIX shell implementation. It does not install or
 depend on Ubuntu Landscape.
 
+## Mirors
+
+Public Git mirrors of my Mercurial repo:
+
+- [wuw on GitLab](https://gitlab.com/uxmaster/wuw)
+- [wuw on GitHub](https://github.com/uxmaster/wuw)
+
 ## Installation
 
-On a machine configured to use the Enabla Devuan repository:
+On [Devuan](https://www.devuan.org/), with the Enabla repository configured:
 
 ```sh
 sudo apt update
@@ -36,14 +43,14 @@ login.
 
 ## Runtime requirements
 
-The Debian package depends on `iproute2` for the `ip` and `ss` commands and on
+The package depends on `iproute2` for the `ip` and `ss` commands and on
 `curl` for the optional local cloud metadata query.
 Other metrics are read directly from `/proc` using standard base-system
 tools; no data is sent anywhere.
 
-## Building the Debian package
+## Building on Devuan
 
-Install the Debian packaging tools and build from the repository root:
+Install the packaging tools and build from the repository root:
 
 ```sh
 sudo apt install build-essential debhelper
@@ -55,5 +62,5 @@ directory.
 
 ## License
 
-Copyright © 2026 Jacek Stypuła. Licensed under the WTFPL, version 2. See
-[`LICENSE`](LICENSE).
+Copyright © 2026 [dr Jacek Stypuła](https://jacekstypula.pl/phd).
+Licensed under the WTFPL, version 2. See [`LICENSE`](LICENSE).
