@@ -18,8 +18,8 @@ depend on Ubuntu Landscape.
 
 Public Git mirrors of my Mercurial repo:
 
-- [wuw on GitLab](https://gitlab.com/uxmaster/wuw)
-- [wuw on GitHub](https://github.com/uxmaster/wuw)
+- [sysinfo on GitLab](https://gitlab.com/uxmaster/sysinfo)
+- [sysinfo on GitHub](https://github.com/uxmaster/sysinfo)
 
 ## Installation
 
