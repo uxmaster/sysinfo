@@ -4,6 +4,22 @@
 usage, memory and swap utilisation, process count, active SSH connections,
 network addresses, and uptime.
 
+```
+ System information as of Sat Oct 17 20:55:36 UTC 2026
+
+  System load:            0.01
+  Usage of /:             14% of 16G
+  Memory usage:           15%
+  Swap usage:             0%
+  Processes:              126
+  Users logged in:        1
+  IPv4 address for eth0:  172.16.0.12
+  IPv6 address for eth0:  2602:ffb6:3:bdb1:1a3c:41a6:b055:862d
+  Public IPv4 address:    170.75.162.102
+
+The uptime of this server is 9h 49m.
+```
+
 By default, `sysinfo` reports addresses assigned directly to network
 interfaces. Use `--public-ip` when a provider uses NAT and exposes the public
 IPv4 mapping through a cloud metadata service at `169.254.169.254`. The
@@ -11,8 +27,8 @@ private address remains visible because it is the address actually assigned
 to the network interface.
 
 The presentation is inspired by the familiar `landscape-sysinfo` output, but
-this is an independent POSIX shell implementation. It does not install or
-depend on Ubuntu Landscape.
+this is an independent POSIX shell implementation that is much faster and lightweight.
+It does not install or depend on Ubuntu Landscape.
 
 ## Mirors
 
